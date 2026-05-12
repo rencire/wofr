@@ -22,9 +22,14 @@
       url = "github:numtide/llm-agents.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    nix-wrapper-modules = {
+      url = "github:rencire/nix-wrapper-modules/feat/wofr-wrapper";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     confix = {
       url = "github:rencire/confix";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.nix-wrapper-modules.follows = "nix-wrapper-modules";
     };
   };
 
@@ -32,10 +37,6 @@
     { flakelight, ... }@inputs:
     let
       agentSkillsLib = inputs."agent-skills".lib."agent-skills";
-      entireConfig = {
-        agents = [ "opencode" ];
-        checkpointRemote = "github:rencire/wofr-checkpoints";
-      };
       mkAgentBundle =
         pkgs:
         let
@@ -69,12 +70,6 @@
           enable = false;
         };
       };
-      mkEntireInit =
-        pkgs:
-        import ./nix/entire-init.nix {
-          inherit pkgs entireConfig;
-          entire = inputs."entire-cli-nix".packages.${pkgs.system}.entire;
-        };
     in
     flakelight ./. {
       inherit inputs;
@@ -91,18 +86,20 @@
           bundle = mkAgentBundle pkgs';
           configured = inputs.confix.lib.configure {
             pkgs = pkgs';
-            configDir = ./.confix;
+            configDir = ./nix/confix;
           };
         in
         {
           packages = [
             inputs."entire-cli-nix".packages.${pkgs'.system}.entire
-            (mkEntireInit pkgs')
             configured.opencode
+            configured.wofr
             # pkgs'.llm-agents.claude-code
             # pkgs'.llm-agents.codex
             # pkgs'.llm-agents.gemini-cli
+            pkgs'.cargo
             pkgs'.git
+            pkgs'.rustc
           ];
           shellHook = agentSkillsLib.mkShellHook {
             pkgs = pkgs';

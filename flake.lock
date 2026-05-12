@@ -83,7 +83,9 @@
     "confix": {
       "inputs": {
         "flakelight": "flakelight",
-        "nix-wrapper-modules": "nix-wrapper-modules",
+        "nix-wrapper-modules": [
+          "nix-wrapper-modules"
+        ],
         "nixpkgs": [
           "nixpkgs"
         ]
@@ -229,18 +231,21 @@
     },
     "nix-wrapper-modules": {
       "inputs": {
-        "nixpkgs": "nixpkgs_2"
+        "nixpkgs": [
+          "nixpkgs"
+        ]
       },
       "locked": {
-        "lastModified": 1772662098,
-        "narHash": "sha256-BKxBM4RNWP+5q0ZQ6v3JlJ0e6fFj/YoYNZ7/OpgabdU=",
-        "owner": "BirdeeHub",
+        "lastModified": 1778550654,
+        "narHash": "sha256-pp2o6SvdixBAZqY/hUZpjZRHnSByPsDltbpLCQS0jnA=",
+        "owner": "rencire",
         "repo": "nix-wrapper-modules",
-        "rev": "2c0a3b795766b25d15ad1ec9eef3a06160154c9a",
+        "rev": "8a3a8d8b291e89ba708cb23f187129cada71f89a",
         "type": "github"
       },
       "original": {
-        "owner": "BirdeeHub",
+        "owner": "rencire",
+        "ref": "feat/wofr-wrapper",
         "repo": "nix-wrapper-modules",
         "type": "github"
       }
@@ -262,22 +267,6 @@
       }
     },
     "nixpkgs_2": {
-      "locked": {
-        "lastModified": 1772419343,
-        "narHash": "sha256-QU3Cd5DJH7dHyMnGEFfPcZDaCAsJQ6tUD+JuUsYqnKU=",
-        "owner": "NixOS",
-        "repo": "nixpkgs",
-        "rev": "93178f6a00c22fcdee1c6f5f9ab92f2072072ea9",
-        "type": "github"
-      },
-      "original": {
-        "owner": "NixOS",
-        "ref": "nixpkgs-unstable",
-        "repo": "nixpkgs",
-        "type": "github"
-      }
-    },
-    "nixpkgs_3": {
       "locked": {
         "lastModified": 1778458615,
         "narHash": "sha256-cY07EsdhBJ8tFXPzDYevgqxRev9ZLxFonuq9wmq5kwg=",
@@ -316,7 +305,8 @@
         "entire-cli-nix": "entire-cli-nix",
         "flakelight": "flakelight_2",
         "llm-agents": "llm-agents",
-        "nixpkgs": "nixpkgs_3",
+        "nix-wrapper-modules": "nix-wrapper-modules",
+        "nixpkgs": "nixpkgs_2",
         "personal-skills": "personal-skills"
       }
     },

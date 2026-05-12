@@ -1,4 +1,3 @@
-# .confix/opencode.nix
 { lib, pkgs, ... }:
 {
   package = pkgs.llm-agents.opencode;
