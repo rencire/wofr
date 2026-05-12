@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "strategy_options": {
+    "checkpoint_remote": "github:rencire/wofr-checkpoints"
+  },
+  "telemetry": false
+}
