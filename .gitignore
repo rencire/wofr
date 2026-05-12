@@ -1,0 +1,8 @@
+.aider
+.aider.*
+.aider*/
+.agents/
+.DS_Store
+.direnv/
+target/
+result
