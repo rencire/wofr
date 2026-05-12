@@ -4,7 +4,10 @@
   settings = {
     entire = {
       agents = [ "opencode" ];
-      checkpoint_remote = "github:rencire/wofr-checkpoints";
+      checkpoint_remote = {
+        provider = "github";
+        repo = "rencire/wofr-checkpoints";
+      };
     };
   };
 }

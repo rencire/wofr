@@ -50,7 +50,10 @@ enable Entire and write `.entire/settings.json`.
 ```toml
 [entire]
 agents = ["opencode"]
-checkpoint_remote = "github:<owner>/<repo>"
+
+[entire.checkpoint_remote]
+provider = "github"
+repo = "<owner>/<repo>"
 ```
 
 Precedence order:
@@ -63,4 +66,4 @@ Supported `entire-init` flags:
 
 - `--config PATH`: read a different config file
 - `--agent NAME`: override the agent list, repeat to add multiple agents
-- `--checkpoint-remote VALUE`: override the checkpoint remote
+- `--checkpoint-remote VALUE`: override the checkpoint remote using `<owner>/<repo>`

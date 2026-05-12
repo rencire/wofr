@@ -8,7 +8,8 @@ use serde::Deserialize;
 const TEMPLATE_REPO: &str = "github:rencire/flake-templates/main";
 const DEFAULT_CONFIG_PATH: &str = "wofr.toml";
 const DEFAULT_ENTIRE_AGENTS: &[&str] = &["opencode"];
-const DEFAULT_CHECKPOINT_REMOTE: &str = "github:<owner>/<repo>";
+const DEFAULT_CHECKPOINT_PROVIDER: &str = "github";
+const DEFAULT_CHECKPOINT_REPO: &str = "<owner>/<repo>";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Action {
@@ -48,7 +49,13 @@ struct WofrConfigFile {
 #[derive(Debug, Default, Deserialize)]
 struct EntireConfigFile {
     agents: Option<Vec<String>>,
-    checkpoint_remote: Option<String>,
+    checkpoint_remote: Option<CheckpointRemoteConfigFile>,
+}
+
+#[derive(Debug, Deserialize)]
+struct CheckpointRemoteConfigFile {
+    provider: String,
+    repo: String,
 }
 
 fn main() -> ExitCode {
@@ -319,11 +326,16 @@ fn resolve_entire_init_config(args: &EntireInitArgs) -> Result<EntireInitConfig,
         return Err("entire agents must contain at least one agent".to_string());
     }
 
+    let file_checkpoint_remote = file_entire
+        .checkpoint_remote
+        .map(resolve_config_checkpoint_remote)
+        .transpose()?;
+
     let checkpoint_remote = args
         .checkpoint_remote
         .clone()
-        .or(file_entire.checkpoint_remote)
-        .or_else(|| Some(DEFAULT_CHECKPOINT_REMOTE.to_string()));
+        .or(file_checkpoint_remote)
+        .or_else(|| Some(DEFAULT_CHECKPOINT_REPO.to_string()));
 
     Ok(EntireInitConfig {
         agents,
@@ -360,22 +372,51 @@ fn write_checkpoint_config(checkpoint_remote: &str) -> Result<(), String> {
     let settings_dir = Path::new(".entire");
     fs::create_dir_all(settings_dir).map_err(|err| err.to_string())?;
     let settings_path = settings_dir.join("settings.json");
-    fs::write(settings_path, checkpoint_settings_json(checkpoint_remote)).map_err(|err| err.to_string())
+    fs::write(settings_path, checkpoint_settings_json(checkpoint_remote)?).map_err(|err| err.to_string())
 }
 
-fn checkpoint_settings_json(checkpoint_remote: &str) -> String {
-    format!(
+fn checkpoint_settings_json(checkpoint_remote: &str) -> Result<String, String> {
+    let repo = parse_checkpoint_remote(checkpoint_remote)?;
+
+    Ok(format!(
         concat!(
             "{{\n",
             "  \"enabled\": true,\n",
             "  \"telemetry\": false,\n",
             "  \"strategy_options\": {{\n",
-            "    \"checkpoint_remote\": \"{}\"\n",
+            "    \"checkpoint_remote\": {{\n",
+            "      \"provider\": \"{}\",\n",
+            "      \"repo\": \"{}\"\n",
+            "    }}\n",
             "  }}\n",
             "}}\n"
         ),
-        escape_json(checkpoint_remote)
-    )
+        escape_json(DEFAULT_CHECKPOINT_PROVIDER),
+        escape_json(repo)
+    ))
+}
+
+fn parse_checkpoint_remote(checkpoint_remote: &str) -> Result<&str, String> {
+    if checkpoint_remote.is_empty() || !checkpoint_remote.contains('/') || checkpoint_remote.contains(':') {
+        return Err(format!(
+            "checkpoint remote must be in '<owner>/<repo>' format, got '{checkpoint_remote}'"
+        ));
+    }
+
+    Ok(checkpoint_remote)
+}
+
+fn resolve_config_checkpoint_remote(
+    checkpoint_remote: CheckpointRemoteConfigFile,
+) -> Result<String, String> {
+    if checkpoint_remote.provider != DEFAULT_CHECKPOINT_PROVIDER {
+        return Err(format!(
+            "checkpoint remote provider must be '{DEFAULT_CHECKPOINT_PROVIDER}', got '{}'",
+            checkpoint_remote.provider
+        ));
+    }
+
+    parse_checkpoint_remote(&checkpoint_remote.repo).map(str::to_string)
 }
 
 fn escape_json(value: &str) -> String {
@@ -482,7 +523,7 @@ mod tests {
                 "--agent",
                 "codex",
                 "--checkpoint-remote",
-                "github:rencire/custom",
+                "rencire/custom",
             ]
             .into_iter()
             .map(str::to_string),
@@ -494,7 +535,7 @@ mod tests {
             EntireInitArgs {
                 config_path: Some(PathBuf::from("custom.toml")),
                 agents: vec!["opencode".to_string(), "codex".to_string()],
-                checkpoint_remote: Some("github:rencire/custom".to_string()),
+                checkpoint_remote: Some("rencire/custom".to_string()),
             }
         );
     }
@@ -503,7 +544,7 @@ mod tests {
     fn resolves_defaults_without_config_file() {
         let config = resolve_entire_init_config(&EntireInitArgs::default()).unwrap();
         assert_eq!(config.agents, vec!["opencode".to_string()]);
-        assert_eq!(config.checkpoint_remote, Some("github:<owner>/<repo>".to_string()));
+        assert_eq!(config.checkpoint_remote, Some("<owner>/<repo>".to_string()));
     }
 
     #[test]
@@ -512,7 +553,7 @@ mod tests {
         let config_path = temp_dir.join("wofr.toml");
         fs::write(
             &config_path,
-            "[entire]\nagents = [\"codex\", \"opencode\"]\ncheckpoint_remote = \"github:rencire/from-file\"\n",
+            "[entire]\nagents = [\"codex\", \"opencode\"]\n[entire.checkpoint_remote]\nprovider = \"github\"\nrepo = \"rencire/from-file\"\n",
         )
         .unwrap();
 
@@ -524,7 +565,7 @@ mod tests {
         .unwrap();
 
         assert_eq!(config.agents, vec!["codex".to_string(), "opencode".to_string()]);
-        assert_eq!(config.checkpoint_remote, Some("github:rencire/from-file".to_string()));
+        assert_eq!(config.checkpoint_remote, Some("rencire/from-file".to_string()));
 
         fs::remove_dir_all(temp_dir).unwrap();
     }
@@ -535,27 +576,76 @@ mod tests {
         let config_path = temp_dir.join("wofr.toml");
         fs::write(
             &config_path,
-            "[entire]\nagents = [\"codex\"]\ncheckpoint_remote = \"github:rencire/from-file\"\n",
+            "[entire]\nagents = [\"codex\"]\n[entire.checkpoint_remote]\nprovider = \"github\"\nrepo = \"rencire/from-file\"\n",
         )
         .unwrap();
 
         let config = resolve_entire_init_config(&EntireInitArgs {
             config_path: Some(config_path.clone()),
             agents: vec!["opencode".to_string()],
-            checkpoint_remote: Some("github:rencire/from-cli".to_string()),
+            checkpoint_remote: Some("rencire/from-cli".to_string()),
         })
         .unwrap();
 
         assert_eq!(config.agents, vec!["opencode".to_string()]);
-        assert_eq!(config.checkpoint_remote, Some("github:rencire/from-cli".to_string()));
+        assert_eq!(config.checkpoint_remote, Some("rencire/from-cli".to_string()));
+
+        fs::remove_dir_all(temp_dir).unwrap();
+    }
+
+    #[test]
+    fn rejects_unsupported_checkpoint_remote_provider_in_config_file() {
+        let temp_dir = make_temp_dir("unsupported-provider");
+        let config_path = temp_dir.join("wofr.toml");
+        fs::write(
+            &config_path,
+            "[entire]\n[entire.checkpoint_remote]\nprovider = \"gitlab\"\nrepo = \"rencire/from-file\"\n",
+        )
+        .unwrap();
+
+        let err = resolve_entire_init_config(&EntireInitArgs {
+            config_path: Some(config_path.clone()),
+            agents: Vec::new(),
+            checkpoint_remote: None,
+        })
+        .unwrap_err();
+
+        assert!(err.contains("provider must be 'github'"));
 
         fs::remove_dir_all(temp_dir).unwrap();
     }
 
     #[test]
     fn escapes_checkpoint_remote_in_json() {
-        let json = checkpoint_settings_json("github:rencire/wofr\"checkpoints");
+        let json = checkpoint_settings_json("rencire/wofr\"checkpoints").unwrap();
         assert!(json.contains("\\\"checkpoints"));
+    }
+
+    #[test]
+    fn writes_checkpoint_remote_as_object_in_json() {
+        let json = checkpoint_settings_json("rencire/wofr-checkpoints").unwrap();
+        assert!(json.contains("\"checkpoint_remote\": {"));
+        assert!(json.contains("\"provider\": \"github\""));
+        assert!(json.contains("\"repo\": \"rencire/wofr-checkpoints\""));
+    }
+
+    #[test]
+    fn rejects_invalid_checkpoint_remote_format() {
+        let err = checkpoint_settings_json("wofr-checkpoints").unwrap_err();
+        assert!(err.contains("<owner>/<repo>"));
+    }
+
+    #[test]
+    fn rejects_provider_prefixed_checkpoint_remote() {
+        let err = checkpoint_settings_json("github:rencire/wofr-checkpoints").unwrap_err();
+        assert!(err.contains("<owner>/<repo>"));
+    }
+
+    #[test]
+    fn hard_codes_checkpoint_provider_to_github() {
+        let json = checkpoint_settings_json("rencire/wofr-checkpoints").unwrap();
+        assert!(json.contains("\"provider\": \"github\""));
+        assert!(json.contains("\"repo\": \"rencire/wofr-checkpoints\""));
     }
 
     #[test]
