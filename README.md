@@ -50,7 +50,7 @@ enable Entire and write `.entire/settings.json`.
 ```toml
 [entire]
 agents = ["opencode"]
-checkpoint_remote = "github:rencire/wofr-checkpoints"
+checkpoint_remote = "github:<owner>/<repo>"
 ```
 
 Precedence order:

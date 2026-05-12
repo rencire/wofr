@@ -1,6 +1,6 @@
 { pkgs, ... }:
 {
-  package = pkgs.callPackage ../package.nix { };
+  package = pkgs.wofr;
   settings = {
     entire = {
       agents = [ "opencode" ];

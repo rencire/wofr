@@ -8,7 +8,7 @@ use serde::Deserialize;
 const TEMPLATE_REPO: &str = "github:rencire/flake-templates/main";
 const DEFAULT_CONFIG_PATH: &str = "wofr.toml";
 const DEFAULT_ENTIRE_AGENTS: &[&str] = &["opencode"];
-const DEFAULT_CHECKPOINT_REMOTE: &str = "github:rencire/wofr-checkpoints";
+const DEFAULT_CHECKPOINT_REMOTE: &str = "github:<owner>/<repo>";
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 enum Action {
@@ -503,10 +503,7 @@ mod tests {
     fn resolves_defaults_without_config_file() {
         let config = resolve_entire_init_config(&EntireInitArgs::default()).unwrap();
         assert_eq!(config.agents, vec!["opencode".to_string()]);
-        assert_eq!(
-            config.checkpoint_remote,
-            Some("github:rencire/wofr-checkpoints".to_string())
-        );
+        assert_eq!(config.checkpoint_remote, Some("github:<owner>/<repo>".to_string()));
     }
 
     #[test]
