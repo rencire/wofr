@@ -10,12 +10,12 @@
       url = "github:Kyure-A/agent-skills-nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    personal-skills = {
+    rencire-skills = {
       url = "github:rencire/agent-skills";
       flake = false;
     };
-    entire-cli-nix = {
-      url = "github:rencire/entire-cli-nix";
+    entire-cli-flake = {
+      url = "github:rencire/entire-cli-flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
     llm-agents = {
@@ -42,7 +42,7 @@
         let
           sources = {
             shared = {
-              path = inputs."personal-skills";
+              path = inputs."rencire-skills";
               subdir = "skills";
             };
           };
@@ -91,7 +91,7 @@
         in
         {
           packages = [
-            inputs."entire-cli-nix".packages.${pkgs'.system}.entire
+            inputs."entire-cli-flake".packages.${pkgs'.system}.default
             configured.opencode
             configured.wofr
             # pkgs'.llm-agents.claude-code
