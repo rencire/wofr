@@ -1,4 +1,4 @@
-{ inputs, inputs', pkgs, ... }:
+{ inputs, pkgs, ... }:
 let
   agentSkillsLib = inputs."agent-skills".lib."agent-skills";
   agentSkillsConfig = import ./agent-skills-config.nix;
@@ -7,11 +7,7 @@ let
     lib = pkgs.lib;
     inherit (agentSkillsConfig) skillSets formats;
   };
-  pkgs' = (pkgs.extend inputs."llm-agents".overlays.shared-nixpkgs).extend (
-    _: prev: {
-      entire = inputs'."entire-cli-flake".packages.default;
-    }
-  );
+  pkgs' = pkgs.extend inputs."llm-agents".overlays.shared-nixpkgs;
   configured = inputs.confix.lib.configure {
     pkgs = pkgs';
     configDir = ./confix;
@@ -20,7 +16,6 @@ in
 {
   packages = [
     pkgs'.git
-    pkgs'.entire
     configured.opencode
     configured.wofr
     # pkgs'.llm-agents.claude-code
