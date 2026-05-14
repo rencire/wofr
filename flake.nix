@@ -16,6 +16,16 @@
       url = "github:rencire/nix-wrapper-modules/feat/wofr-wrapper";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    entire-cli-flake = {
+      url = "github:rencire/entire-cli-flake";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flakelight.follows = "flakelight";
+      inputs.confix.follows = "confix";
+      inputs.nix-wrapper-modules.follows = "nix-wrapper-modules";
+      inputs.llm-agents.follows = "llm-agents";
+      inputs.agent-skills.follows = "agent-skills";
+      inputs.rencire-skills.follows = "rencire-skills";
+    };
     llm-agents = {
       url = "github:numtide/llm-agents.nix";
       inputs.nixpkgs.follows = "nixpkgs";

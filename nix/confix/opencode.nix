@@ -6,6 +6,7 @@
     permission = "allow";
     plugin = [
       "opencode-worktree"
+      "superpowers@git+https://github.com/obra/superpowers.git"
     ];
     mcp = {
       nixos = {
@@ -20,10 +21,9 @@
       };
       # NOTE: This server still needs GITHUB_PERSONAL_ACCESS_TOKEN wired in
       # at runtime later, ideally via sops-nix or another secret manager.
-      # Once the access token is set, make sure to set enabled = true.
       github = {
         type = "local";
-        enabled = false;
+        enabled = true;
         command = [
           (lib.getExe pkgs.github-mcp-server)
           "stdio"

@@ -1,4 +1,4 @@
-{ inputs, pkgs, ... }:
+{ inputs, inputs', pkgs, ... }:
 let
   agentSkillsLib = inputs."agent-skills".lib."agent-skills";
   agentSkillsConfig = import ./agent-skills-config.nix;
@@ -7,7 +7,11 @@ let
     lib = pkgs.lib;
     inherit (agentSkillsConfig) skillSets formats;
   };
-  pkgs' = pkgs.extend inputs."llm-agents".overlays.shared-nixpkgs;
+  pkgs' = (pkgs.extend inputs."llm-agents".overlays.shared-nixpkgs).extend (
+    _: prev: {
+      entire = inputs'."entire-cli-flake".packages.default;
+    }
+  );
   configured = inputs.confix.lib.configure {
     pkgs = pkgs';
     configDir = ./confix;
@@ -15,13 +19,16 @@ let
 in
 {
   packages = [
+    pkgs'.bun
     pkgs'.git
+    pkgs'.entire
     configured.opencode
     configured.wofr
     # pkgs'.llm-agents.claude-code
     # pkgs'.llm-agents.codex
     # pkgs'.llm-agents.gemini-cli
   ];
+  env.GSTACK_HOME = ".gstack";
   shellHook = agentSkillsLib.mkShellHook {
     pkgs = pkgs';
     bundle = agentBundle.bundle pkgs';
